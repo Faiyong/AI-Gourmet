@@ -2,6 +2,8 @@
 
 **AI-Gourmet** - 一款智能美食探索应用，帮你发现身边的美食。
 
+![WechatIMG45](https://github.com/user-attachments/assets/1c4428f8-8dff-488c-8f6b-05c1c5e72a9c)
+
 ---
 
 ## 🚀 快速启动
