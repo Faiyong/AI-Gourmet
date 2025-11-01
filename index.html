@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>舌尖上的AI - 今天吃什么？</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.3/lib/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+</head>
+<body>
+  <!-- 启动加载页 -->
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <div class="logo-icon">🍜</div>
+        <h1 class="logo-text">舌尖上的AI</h1>
+        <p class="logo-subtitle">发现你身边的美食</p>
+      </div>
+      
+      <div class="splash-status">
+        <div class="status-icon">
+          <svg class="spinner" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+        </div>
+        <p class="status-text" id="splash-status-text">需要获取您的位置信息</p>
+        <p class="status-detail" id="splash-status-detail">为了给您推荐附近的美食</p>
+        
+        <!-- 授权按钮（初始显示） -->
+        <button id="splash-auth-button" class="splash-auth-button" style="display: block;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          允许获取位置
+        </button>
+      </div>
+      
+      <div class="splash-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="splash-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bg-layer"></div>
+  <header class="app-header">
+    <div class="container header-inner">
+      <div>
+        <h1>舌尖上的AI</h1>
+        <p>让选择美食更有趣：AI学习你的喜好，为你推荐适合的美食</p>
+      </div>
+      <div class="header-actions">
+        <div id="datetime-weather" class="datetime-weather">
+          <div class="info-row">
+            <div class="info-item datetime-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="info-icon">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span id="current-datetime" class="info-text"></span>
+            </div>
+            <div class="info-item weather-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="info-icon">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+              <span id="current-weather" class="info-text"></span>
+            </div>
+          </div>
+          <div class="info-row location-row">
+            <div class="info-item location-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="info-icon">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span id="current-location" class="info-text location-text">📍 获取位置中...</span>
+            </div>
+          </div>
+        </div>
+        <button id="btn-favorites" class="btn-favorite" title="我的收藏">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="favorite-count">0</span>
+        </button>
+        <button id="btn-settings" class="btn-settings" title="设置">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m5.66-13.66l-4.24 4.24m-2.82 2.82l-4.24 4.24M1 12h6m6 0h6M3.34 3.34l4.24 4.24m2.82 2.82l4.24 4.24"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="rankings">
+        <h2 class="section-title"><span class="trophy-icon">🏆</span> 周边热门美食榜单</h2>
+        <div class="ranking-grid">
+          <div class="ranking-card">
+            <h3>热门菜品 TOP 20</h3>
+            <div id="dish-ranking" class="ranking-list"></div>
+          </div>
+          <div class="ranking-card">
+            <h3>热门店铺 TOP 10</h3>
+            <div id="shop-ranking" class="ranking-list"></div>
+          </div>
+        </div>
+    </section>
+    
+    <section class="unified-search">
+      <h2 class="section-title"><span class="search-icon">🔍</span> 美食探索</h2>
+      <div class="search-container">
+        <!-- Tab 切换按钮 -->
+        <div class="search-tabs">
+          <button id="tab-ai" class="search-tab active" data-tab="ai">
+            🤖 AI 智能推荐
+          </button>
+          <button id="tab-keyword" class="search-tab" data-tab="keyword">
+            🎯 关键字搜索
+          </button>
+        </div>
+
+        <!-- Tab 内容区 -->
+        <div class="search-tabs-content">
+          <!-- AI 推荐 Tab -->
+          <div id="tab-content-ai" class="search-tab-panel active">
+            <div class="ai-reco-content">
+              <textarea id="ai-prompt" class="ai-input" rows="2" placeholder="描述您的用餐需求：例如：想吃清淡开胃的、想吃暖和的汤类、想吃重口下饭的"></textarea>
+              <div class="ai-actions">
+                <button id="btn-ai-reco" class="btn primary">生成推荐</button>
+                <span id="ai-tip" class="ai-tip"></span>
+              </div>
+              <div id="ai-stream-output" class="ai-stream-output">
+                <div class="ai-placeholder">
+                  <h3>🤖 AI 智能推荐</h3>
+                  <p>基于您的偏好和实时环境（当前位置、时段、季节、天气），为您推荐最适合的美食</p>
+                  <ul>
+                    <li>🎯 <strong>精准匹配</strong>：根据您的描述（口味、场景等）给出最佳推荐</li>
+                    <li>🌤️ <strong>环境匹配</strong>：结合时间段和所在地天气，推荐应季适宜菜品</li>
+                    <li>💡 <strong>智能分析</strong>：AI 会分析您收藏的菜品特点，推荐相似风格的新菜品</li>
+                  </ul>
+                  <p class="ai-hint">👆 在上方输入框中描述您的需求，AI会为您量身定制推荐</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 关键字搜索 Tab -->
+          <div id="tab-content-keyword" class="search-tab-panel">
+            <div class="bubbles-content">
+              <div class="search-input-wrapper">
+                <input id="dish-search-input" type="text" class="dish-search-input" placeholder="输入菜品名进行搜索..." />
+                <button id="btn-dish-search" class="btn-dish-search" title="搜索">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                  </svg>
+                </button>
+              </div>
+              <div id="bubble-path" class="bubble-path">
+                <span id="bubble-hint" class="bubble-hint-text">💡 直接点击下面关键词进行筛选</span>
+              </div>
+              <div id="bubble-canvas" class="bubble-canvas" aria-label="关键字气泡"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 搜索结果区域 - 整合到美食探索内 -->
+        <div class="search-results-container">
+          <div id="stats" class="stats"></div>
+          <div id="cards" class="cards"></div>
+          <div id="pagination" class="pagination">
+            <button id="page-prev" class="btn">上一页</button>
+            <span id="page-info" class="page-info"></span>
+            <button id="page-next" class="btn">下一页</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 美食笔记 -->
+    <section class="notes-section">
+      <h2 class="section-title">📝 美食笔记</h2>
+      <div class="notes-card">
+        <div class="notes-search-wrapper">
+          <input id="notes-search-input" type="text" class="notes-search-input" placeholder="搜索美食笔记，例如：杭州美食推荐" />
+          <button id="btn-notes-search" class="btn-notes-search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            搜索笔记
+          </button>
+        </div>
+        <div id="notes-results" class="notes-results">
+          <div class="notes-placeholder">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <p>搜索美食笔记，发现更多美食故事</p>
+            <p class="notes-hint">💡 输入关键词，如"杭州美食推荐"、"西湖醋鱼"等</p>
+          </div>
+        </div>
+        <div id="notes-pagination" class="notes-pagination" style="display: none;">
+          <button id="notes-page-prev" class="btn">上一页</button>
+          <span id="notes-page-info" class="page-info"></span>
+          <button id="notes-page-next" class="btn">下一页</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 美食菜谱 -->
+    <section class="recipes-section">
+      <h2 class="section-title">👨‍🍳 美食菜谱</h2>
+      <div class="recipes-container">
+        <!-- Tab 切换 -->
+        <div class="recipes-tabs">
+          <button id="recipe-tab-search" class="recipe-tab active" data-tab="search">
+            🔍 关键字搜索
+          </button>
+          <button id="recipe-tab-featured" class="recipe-tab" data-tab="featured">
+            ⭐ 精选推荐
+          </button>
+          <button id="recipe-tab-health" class="recipe-tab" data-tab="health">
+            🥗 饮食健康
+          </button>
+        </div>
+
+        <!-- Tab 内容 -->
+        <div class="recipes-content">
+          <!-- 关键字搜索 -->
+          <div id="recipe-panel-search" class="recipe-panel active">
+            <div class="recipe-search-wrapper">
+              <input id="recipe-search-input" type="text" class="recipe-search-input" placeholder="搜索菜谱，例如：红烧肉、西红柿炒蛋" />
+              <button id="btn-recipe-search" class="btn-recipe-search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                搜索菜谱
+              </button>
+            </div>
+            <div id="recipe-search-results" class="recipe-results">
+              <div class="recipe-placeholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+                  <path d="M7 2v20"></path>
+                  <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+                </svg>
+                <p>搜索菜谱，学习美味做法</p>
+                <p class="recipe-hint">💡 输入菜品名称，获取详细做法和食材清单</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 精选推荐 -->
+          <div id="recipe-panel-featured" class="recipe-panel">
+            <div class="recipe-featured-header">
+              <p class="recipe-featured-desc">每日精选优质菜谱，为您推荐热门美食</p>
+            </div>
+            <div id="recipe-featured-results" class="recipe-results">
+              <div class="recipe-placeholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <p>每日精选优质菜谱</p>
+                <p class="recipe-hint">💡 点击上方按钮加载今日推荐菜谱</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 饮食健康 -->
+          <div id="recipe-panel-health" class="recipe-panel">
+            <div class="health-categories">
+              <button class="health-category-btn" data-category="">全部</button>
+              <button class="health-category-btn" data-category="减肥">减肥瘦身</button>
+              <button class="health-category-btn" data-category="美容">美容养颜</button>
+              <button class="health-category-btn" data-category="健脾">健脾养胃</button>
+              <button class="health-category-btn" data-category="补钙">补钙强骨</button>
+              <button class="health-category-btn" data-category="提高免疫力">提高免疫力</button>
+              <button class="health-category-btn" data-category="清热">清热去火</button>
+              <button class="health-category-btn" data-category="润肺">润肺止咳</button>
+              <button class="health-category-btn" data-category="糖尿病">糖尿病</button>
+              <button class="health-category-btn" data-category="高血压">高血压</button>
+            </div>
+            <div id="recipe-health-results" class="recipe-results">
+              <div class="recipe-placeholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <p>选择健康分类，获取相关菜谱</p>
+                <p class="recipe-hint">💡 点击上方分类按钮，查看对应的健康菜谱</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分页 -->
+        <div id="recipe-pagination" class="recipe-pagination" style="display: none;">
+          <button id="recipe-page-prev" class="btn">上一页</button>
+          <span id="recipe-page-info" class="page-info"></span>
+          <button id="recipe-page-next" class="btn">下一页</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <span>开发者：只会写java的fuaiyong</code></span>
+    </div>
+  </footer>
+  
+  <!-- 收藏列表弹窗 -->
+  <div id="favorites-modal" class="modal" aria-hidden="true">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>💖 我的收藏</h3>
+        <button id="btn-close-favorites" class="btn-close" title="关闭">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="favorites-summary" class="favorites-summary"></div>
+        <div id="favorites-list" class="favorites-list"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 笔记详情弹窗 -->
+  <div id="note-detail-modal" class="modal" aria-hidden="true">
+    <div class="modal-overlay"></div>
+    <div class="modal-content note-detail-modal-content">
+      <div class="modal-header">
+        <h3 id="note-detail-title">笔记详情</h3>
+        <button id="btn-close-note-detail" class="btn-close" title="关闭">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body note-detail-body">
+        <div id="note-detail-content" class="note-detail-content">
+          <div class="note-detail-loading">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="6"></line>
+              <line x1="12" y1="18" x2="12" y2="22"></line>
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+              <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+              <line x1="2" y1="12" x2="6" y2="12"></line>
+              <line x1="18" y1="12" x2="22" y2="12"></line>
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+              <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+            </svg>
+            <p>正在加载笔记详情...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 菜谱详情弹窗 -->
+  <div id="recipe-detail-modal" class="modal" aria-hidden="true">
+    <div class="modal-overlay"></div>
+    <div class="modal-content recipe-detail-modal-content">
+      <div class="modal-header">
+        <h3 id="recipe-detail-title">菜谱详情</h3>
+        <button id="btn-close-recipe-detail" class="btn-close" title="关闭">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body recipe-detail-body">
+        <div id="recipe-detail-content" class="recipe-detail-content">
+          <div class="recipe-detail-loading">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="2" x2="12" y2="6"></line>
+              <line x1="12" y1="18" x2="12" y2="22"></line>
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+              <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+              <line x1="2" y1="12" x2="6" y2="12"></line>
+              <line x1="18" y1="12" x2="22" y2="12"></line>
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+              <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+            </svg>
+            <p>正在加载菜谱详情...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI配置弹窗 -->
+  <div id="ai-config-modal" class="modal" aria-hidden="true">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>AI 模型配置</h3>
+        <button id="btn-close-modal" class="btn-close" title="关闭">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="ai-baseurl-modal">OpenAI 兼容 Base URL</label>
+          <input id="ai-baseurl-modal" class="ai-input" placeholder="默认：https://dashscope.aliyuncs.com/compatible-mode/v1" />
+        </div>
+        <div class="form-group">
+          <label for="ai-apikey-modal">API Key</label>
+          <input id="ai-apikey-modal" class="ai-input" type="password" placeholder="仅保存在本地浏览器" />
+        </div>
+        <div class="form-group">
+          <label for="ai-recommend-model-modal">推荐模型</label>
+          <input id="ai-recommend-model-modal" class="ai-input" placeholder="默认：qwen-plus" />
+        </div>
+        <div class="form-group">
+          <label for="ai-summary-model-modal">分析模型</label>
+          <input id="ai-summary-model-modal" class="ai-input" placeholder="默认：qwen-flash" />
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-config" class="btn primary">保存配置</button>
+          <button id="btn-cancel-config" class="btn secondary">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="spin-overlay" class="spin-overlay" aria-hidden="true">
+    <div class="spinner"></div>
+    <div class="spin-tip">AI 正在思考今天吃什么…</div>
+  </div>
+  <script src="./p5-bg.js?v=3.0"></script>
+  <script src="./script.js"></script>
+</body>
+</html>
+
+
